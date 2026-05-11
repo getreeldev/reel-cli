@@ -1,11 +1,32 @@
-# Reel
+# Reel CLI
 
 Kubernetes continuous compliance. Captures container state — SBOMs, cryptographic inventories, vulnerability scans, and malware detection — before pods disappear.
 
+This repository distributes the **`reel` CLI binary** (Linux, macOS, Intel + Apple Silicon) and tracks its [changelog](./CHANGELOG.md). Related artifacts live in dedicated repos:
+
+| Artifact | Repository |
+|---|---|
+| **CLI binary** + changelog (this repo) | [`getreeldev/releases`](https://github.com/getreeldev/releases) |
+| **GitHub Action** | [`getreeldev/reel-action`](https://github.com/getreeldev/reel-action) |
+| **Helm chart** | [`getreeldev/helm`](https://github.com/getreeldev/helm) |
+| **Homebrew formula** | [`getreeldev/homebrew-tap`](https://github.com/getreeldev/homebrew-tap) |
+| **Docker images** | `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy` on Docker Hub |
+
 ## Install
 
+### Linux / macOS — direct download
+
 ```bash
-curl -sL https://github.com/getreeldev/releases/releases/latest/download/reel_linux_amd64.tar.gz | tar xz && sudo mv reel /usr/local/bin/
+curl -sL https://github.com/getreeldev/releases/releases/latest/download/reel_linux_amd64.tar.gz \
+  | tar xz && sudo mv reel /usr/local/bin/
+```
+
+Other targets: `reel_linux_arm64.tar.gz`, `reel_darwin_amd64.tar.gz`, `reel_darwin_arm64.tar.gz`.
+
+### macOS — Homebrew
+
+```bash
+brew install getreeldev/tap/reel
 ```
 
 Verify:
@@ -21,8 +42,11 @@ reel status
 # Generate an SBOM
 reel export sbom --image nginx:latest -o sbom.json
 
-# Vulnerability scan (SARIF output)
+# Vulnerability scan (SARIF output, ready for GitHub Code Scanning)
 reel export sarif --image nginx:latest -o results.sarif
+
+# Annotate scan output with vendor VEX statements (new in v1.5.0)
+reel export sbom --image redhat/ubi9-minimal --scanners vuln,vex
 
 # Cryptographic bill of materials
 reel export cbom --image nginx:latest -o cbom.json
@@ -31,63 +55,11 @@ reel export cbom --image nginx:latest -o cbom.json
 reel export malware --image nginx:latest -o malware.json
 ```
 
-## GitHub Action
-
-```yaml
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write   # required when scan-types includes `sarif`
-    steps:
-      - uses: getreeldev/releases@v1
-        with:
-          image: myapp:${{ github.sha }}
-          scan-types: sbom,cbom,sarif,malware
-          fail-on-findings: true
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: security-reports
-          path: reel-results/
-```
-
-### Required permissions
-
-When `scan-types` includes `sarif`, the caller must grant `security-events: write` so findings upload to GitHub Code Scanning. Without it, the upload step fails.
-
-### Two-layer gating
-
-The action supports two complementary gates:
-
-| Gate | Trigger | What fails | Dismissal-aware |
-|---|---|---|---|
-| **Workflow run** | `fail-on-findings: true` on the action | Any SBOM vulns or malware hits after filters | No |
-| **PR merge** | "Code Scanning results" status check in branch protection | GCS alerts from uploaded SARIF, above repo's configured severity threshold | Yes |
-
-For most consumers: enable both. The workflow gate gives fast feedback on the CI run; the PR gate is triage-friendly — dismissals in the Security tab persist across runs, and the severity threshold is configurable per-repo.
-
-### Outputs
-
-| Output | Description |
-|---|---|
-| `sbom-file` | Path to `sbom.json` if generated |
-| `sarif-file` | Path to `results.sarif` if generated |
-| `cbom-file` | Path to `cbom.json` if generated |
-| `malware-file` | Path to `malware.json` if generated |
-| `vuln-count` | Vulnerability count from SBOM (emitted on every run) |
-| `malware-count` | Infected file count from malware scan (emitted on every run) |
-
-### Scan summary
-
-Each run appends a readable markdown summary to the Actions run page (`$GITHUB_STEP_SUMMARY`), covering all four scan types with per-scan findings counts and a sorted list of the top vulnerabilities when findings exist.
-
-See [GitHub Action docs](https://getreel.dev/docs/github-action) for full configuration options.
-
 ## Documentation
 
-Full documentation at [getreel.dev/docs](https://getreel.dev/docs).
+- Full docs: [getreel.dev/docs](https://getreel.dev/docs)
+- GitHub Action usage: [getreel.dev/docs/github-action](https://getreel.dev/docs/github-action)
+- VEX integration: [vex.getreel.dev](https://vex.getreel.dev)
 
 ## License
 

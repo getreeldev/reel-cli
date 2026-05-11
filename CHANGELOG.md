@@ -1,0 +1,36 @@
+# Changelog
+
+All notable changes to Reel are documented here.
+
+For releases up to v1.4.0, see [`CHANGELOG.old`](./CHANGELOG.old).
+
+## v1.5.0
+
+Adds VEX support to `reel export sbom`. Annotate vulnerability scans with vendor "not affected" / "fixed" / "exploitable" statements served by [vex.getreel.dev](https://vex.getreel.dev) — Red Hat, SUSE, Ubuntu, and Debian coverage — so downstream tooling (Trivy `--vex`, Dependency-Track, GitHub Code Scanning) suppresses noise automatically.
+
+### CLI
+
+- **New `--scanners vex` flag on `reel export sbom`** — opt-in scanner that POSTs the Trivy-generated CycloneDX SBOM to `vex.getreel.dev/v1/analyze` and merges vendor VEX statements back into the output. Vendor sources currently aggregated: Red Hat (CSAF + OVAL), SUSE (CSAF), Ubuntu (OpenVEX + OVAL), Debian (OVAL).
+  - **CycloneDX output** (default): annotates `vulnerabilities[].analysis` blocks in place with `state`, `justification`, and `response` per the CycloneDX VEX schema. Trivy `--vex` and Dependency-Track pick up vendor `not_affected` / `fixed` / `affected` automatically.
+  - **SARIF output** (`--format sarif`): vendor `not_affected` CVEs land in GitHub Code Scanning as pre-dismissed findings via `results[].suppressions[]`. Hidden by default, surfaceable on demand from the Security tab.
+- **New `--vex-url` flag** to point `--scanners vex` at a self-hosted vex-hub (default: `https://vex.getreel.dev`). For air-gapped environments running their own `reel-vex` instance.
+- **Fail-soft on hub unreachability** — network error or non-2xx from vex-hub → CLI exits 0 with the un-annotated SBOM and stamps `metadata.properties` with `reel:vex_hub_status=unreachable`. A transient hub outage never breaks a CI pipeline that asked for VEX annotation; consumers can detect the degraded mode by checking the metadata flag.
+
+### Examples
+
+```bash
+# Annotate a UBI image scan with vendor VEX (CycloneDX, default format)
+reel export sbom --image redhat/ubi9-minimal --scanners vuln,vex
+
+# SARIF for GitHub Code Scanning, with vendor not_affected pre-suppressed
+reel export sbom --image redhat/ubi9-minimal --scanners vuln,vex --format sarif -o reel.sarif
+
+# Point at a self-hosted hub
+reel export sbom --image redhat/ubi9-minimal --scanners vex --vex-url https://vex.example.internal
+```
+
+### Compatibility
+
+- `--scanners vex` is **not included in `--scanners all`** — the hub call is an outbound network dependency, opt-in by design.
+- Supported output formats with `--scanners vex`: `cyclonedx` (default), `sarif`. SPDX is rejected at parse time pending vex-hub spec support.
+- `--scanners vex` auto-enables `vuln` (you need the underlying vulnerability data for VEX to annotate).

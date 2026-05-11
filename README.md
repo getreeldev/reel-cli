@@ -6,7 +6,7 @@ This repository distributes the **`reel` CLI binary** (Linux, macOS, Intel + App
 
 | Artifact | Repository |
 |---|---|
-| **CLI binary** + changelog (this repo) | [`getreeldev/releases`](https://github.com/getreeldev/releases) |
+| **CLI binary** + changelog (this repo) | [`getreeldev/reel-cli`](https://github.com/getreeldev/reel-cli) |
 | **GitHub Action** | [`getreeldev/reel-action`](https://github.com/getreeldev/reel-action) |
 | **Helm chart** | [`getreeldev/helm`](https://github.com/getreeldev/helm) |
 | **Homebrew formula** | [`getreeldev/homebrew-tap`](https://github.com/getreeldev/homebrew-tap) |
@@ -17,7 +17,7 @@ This repository distributes the **`reel` CLI binary** (Linux, macOS, Intel + App
 ### Linux / macOS — direct download
 
 ```bash
-curl -sL https://github.com/getreeldev/releases/releases/latest/download/reel_linux_amd64.tar.gz \
+curl -sL https://github.com/getreeldev/reel-cli/releases/latest/download/reel_linux_amd64.tar.gz \
   | tar xz && sudo mv reel /usr/local/bin/
 ```
 

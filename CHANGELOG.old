@@ -118,8 +118,8 @@ Initial release.
 ### Distribution
 
 - `brew install getreeldev/tap/reel` (macOS arm64)
-- `curl` from `getreeldev/releases` (Linux amd64)
-- `uses: getreeldev/releases@v1` (GitHub Action)
+- `curl` from `getreeldev/reel-cli` (Linux amd64)
+- `uses: getreeldev/reel-cli@v1` (GitHub Action)
 - `helm install reel oci://docker.io/getreel/helm` (Kubernetes agent)
 
 ### Infrastructure

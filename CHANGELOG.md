@@ -2,6 +2,16 @@
 
 All notable changes to Reel are documented here.
 
+## v1.5.2
+
+CLI quality-of-life release. Three focused improvements; no API or behavioural changes.
+
+### CLI
+
+- **`reel schedule` is now scannable.** Default output is a compact table — one row per scheduled command, with cron expressions translated to plain English (`every 5 minutes` instead of `*/5 * * * *`). The previous per-pod block format is still available via `--detailed` for cases that need full command lines and dependency wiring.
+- **`reel license` reports remaining time in human-readable units.** A 10-year license used to render as `85223h0m47s remaining`; it now reads `9 years 8 months remaining`. Sub-day durations stay in the native form (`23h14m`) since they're already legible.
+- **`reel status` output: "Capabilities" → "Features".** Renamed the section header and the command's `--help` description to remove a reference to a removed `reel capabilities` subcommand. JSON output is unchanged.
+
 ## v1.5.1
 
 Bug-fix release for K8s agent deployments. No new features.

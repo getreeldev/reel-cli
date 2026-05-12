@@ -4,6 +4,18 @@ All notable changes to Reel are documented here.
 
 For releases up to v1.4.0, see [`CHANGELOG.old`](./CHANGELOG.old).
 
+## v1.5.1
+
+Bug-fix release for K8s agent deployments. No new features.
+
+### Fixed
+
+- **Binary forensic uploads (`reel --agent upload layer/memory/checkpoint/frame`) now honor the `aws-credentials` K8s secret on non-EC2 clusters.** Previously these four upload types bypassed the secret and fell through to the default AWS credential chain — on GKE / AKS / on-prem K8s this meant timing out on IMDS. SBOM, CBOM, and other JSON exports were unaffected. If you scheduled binary-blob uploads to S3 from a non-EC2 cluster, you'll want to upgrade.
+
+### Companion fixes elsewhere
+
+- **Helm chart v1.5.1** ships two chart-side fixes that align the templates with what the agent binary has expected since Feb 2026: the shared volume now lands at `/opt/trivy/bin` (init-trivy was previously writing the binary to a path that wasn't on the shared volume, so the agent re-downloaded Trivy on every cold start), and the ClamAV virus DB persists across pod restarts via a `/var/tmp/reel/clamav` hostPath (was re-downloading ~110 MB on every restart). See the [chart changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md).
+
 ## v1.5.0
 
 Adds VEX support to `reel export sbom`. Annotate vulnerability scans with vendor "not affected" / "fixed" / "exploitable" statements served by [vex.getreel.dev](https://vex.getreel.dev) — Red Hat, SUSE, Ubuntu, and Debian coverage — so downstream tooling (Trivy `--vex`, Dependency-Track, GitHub Code Scanning) suppresses noise automatically.

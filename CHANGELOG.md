@@ -2,8 +2,6 @@
 
 All notable changes to Reel are documented here.
 
-For releases up to v1.4.0, see [`CHANGELOG.old`](./CHANGELOG.old).
-
 ## v1.5.1
 
 Bug-fix release for K8s agent deployments. No new features.

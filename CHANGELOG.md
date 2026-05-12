@@ -2,6 +2,43 @@
 
 All notable changes to Reel are documented here.
 
+## v1.6.0
+
+Two new features and a scheduler verb cleanup.
+
+### Added
+
+- **`--socket <path>` for non-default runtime sockets.** Override the socket path when containerd / CRI-O / Docker lives somewhere other than the standard location. Pair with `--runtime`:
+
+  ```bash
+  reel list containers --runtime containerd --socket /var/run/containerd/containerd.sock
+  ```
+
+  Replaces the previous "no container runtime detected" wall when the runtime socket exists but at a non-default path.
+
+- **Actionable runtime-detection errors.** When `--runtime X` is requested but unavailable, the error now tells you what went wrong and what to try next: EACCES (suggests `sudo` or group membership), ENOENT (suggests checking the daemon and pointing `--socket` at the right path), not-a-socket (verify path correctness). Previously all three rendered as the same generic "X socket is not accessible / check that the daemon is running".
+
+- **VEX annotation now works in the scheduler.** Scheduled `upload sbom --scanners vuln,vex` annotations produce vex-hub-annotated CycloneDX SBOMs uploaded to S3, same as `reel export sbom --scanners vex` on the CLI. Previously the scheduler passed "vex" through to Trivy as a literal scanner name; Trivy silently ignored it and the SBOM uploaded to S3 had zero annotations. Fail-soft: on vex-hub error, ships un-annotated SBOM with `reel:vex_hub_status=unreachable` in the CycloneDX metadata.
+
+### Changed
+
+- **Scheduler verb namespace mirrors the CLI's export/upload split.** Before v1.6, `reel.io/schedule: "*/5 * * * * | export sbom --s3-bucket foo"` would silently upload to S3 in the scheduler, even though `reel export sbom --s3-bucket foo` on the CLI rejected that exact flag combination. Now both honor the split:
+  - `export` = local-only artifact production (e.g., `export checkpoint -o /tmp/backups/`). Rejects `--s3-bucket` / `--s3-region` / `--s3-secret-name`.
+  - `upload` = S3 upload. Requires an S3 destination (either `--s3-bucket` arg or `reel.io/s3-bucket` annotation).
+  - Unknown verbs (typos) are rejected at parse time with a clear error.
+
+  Existing annotations that upload to S3 via `export` need to migrate to `upload`:
+
+  ```diff
+  - reel.io/schedule: "*/5 * * * * | export sbom --scanners vuln --s3-bucket evidence"
+  + reel.io/schedule: "*/5 * * * * | upload sbom --scanners vuln --s3-bucket evidence"
+  ```
+
+### Fixed
+
+- **`reel -h` no longer ships two redundant command lists.** The hand-written list in the top section drifted out of sync with the cobra-auto list at the bottom — still mentioned the long-renamed `capabilities` subcommand and missed the (still-current) `upload` verb. The cobra-auto list is now the only one. Same cleanup applied to `reel export -h`, `reel upload -h`, `reel list -h`, etc.
+- **`reel upload -h` example used the wrong annotation key and was missing a pipe separator.** Replaced with the correct shape: `reel.io/schedule: "0 */4 * * * | upload layer --s3-bucket vault"`.
+
 ## v1.5.3
 
 Release-pipeline fix. No CLI behaviour or output changes.

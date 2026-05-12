@@ -2,6 +2,16 @@
 
 All notable changes to Reel are documented here.
 
+## v1.5.3
+
+Release-pipeline fix. No CLI behaviour or output changes.
+
+### Fixed
+
+- **`reel version` from inside an agent pod now reports the GA version, not the release-candidate suffix.** Before v1.5.3, `kubectl exec … reel version` returned strings like `v1.5.2-rc.3` even though the agent image was tagged `v1.5.2` and the Helm chart reported `appVersion: v1.5.2`. The CLI binary baked into the image was built during the RC phase and never re-stamped at GA promotion. The release pipeline now builds the CLI once with the GA marketing version and promotes the same bytes through to GA — so the version string in the image matches the image tag and the chart appVersion.
+
+The CLI tarballs published to GitHub releases and Homebrew also flow through the same build-once-promote path now; tarball downloaders were unaffected by the previous bug but benefit from the pipeline-time speed-up (~3 min faster per release).
+
 ## v1.5.2
 
 CLI quality-of-life release. Three focused improvements; no API or behavioural changes.

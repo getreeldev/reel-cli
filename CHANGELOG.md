@@ -2,6 +2,86 @@
 
 All notable changes to Reel are documented here.
 
+## v1.7.0
+
+Major CRIU detection and installation overhaul. Fixes the segfault class
+of bugs we kept hitting on hosts with different glibc versions than the
+init-criu build base, and replaces the brittle env-var-trust capability
+check with a marker-file contract between init-criu and the agent.
+
+### Fixed
+
+- **Checkpoint no longer segfaults on hosts with a different glibc than
+  the init-criu build base.** init-criu previously bundled `libc.so.6` in
+  `/opt/reel/lib`, which the host's `ld-linux` would load via
+  `LD_LIBRARY_PATH` and segfault on symbol/layout mismatch. The bundle
+  now blacklists glibc-coupled libs (libc, libpthread, libdl, librt,
+  libm, libresolv, libutil, libnss_*, ld-linux); the host's libc loads
+  cleanly and CRIU runs. Symptom was `criu swrk failed: signal:
+  segmentation fault (core dumped)` from every checkpoint attempt on
+  newer Ubuntu hosts (OrbStack questing, e.g.).
+
+- **CRIU's net-lock no longer dies on `iptables-restore: undefined
+  symbol: xt_xlate_set_get`.** The previous install used an
+  `LD_LIBRARY_PATH=/opt/reel/lib` wrapper script that exported the env
+  to every CRIU child process — including host's `iptables-restore`,
+  which then picked up our older bundled `libxtables.so.12` and crashed
+  on its first symbol lookup. The new install bakes
+  `DT_RPATH=/opt/reel/lib` into the binary via `patchelf --force-rpath`;
+  RPATH resolves the binary's own deps without propagating to child
+  processes' lib resolution.
+
+- **`reel status` no longer reports `✓ Checkpoint` when CRIU is
+  actually broken.** Capability detection switched from trusting the
+  `CRIU_ENABLED` env var (set by Helm) to reading a status marker file
+  written by init-criu. The marker says one of: `source=reel` (reel's
+  MPTCP-enabled CRIU installed at host's PATH), `source=host` (our
+  install failed but the host already has a CRIU), or `source=none`
+  (no CRIU available). False-positive ✓ Checkpoint reports are gone.
+
+### Changed
+
+- **`reel status` CRIU line gains a source qualifier.** Examples:
+  - `CRIU: v4.2 (reel, MPTCP-enabled)` — happy path
+  - `CRIU: vX.Y (host, no MPTCP — Go 1.24+ workloads may fail)` — reel's
+    install failed but the host has a CRIU; checkpoints will work for
+    most workloads but Go 1.24+ services may fail at the MPTCP socket
+    layer (the patch isn't in mainline CRIU yet).
+  - Line omitted when init-criu was disabled in the chart; the Features
+    section instead shows `✓ Checkpoint (init-criu disabled in chart;
+    CRIU presence not verified, checkpoint is best-effort)`.
+
+- **`initCriu.enabled=false` in Helm no longer artificially blocks
+  checkpoint.** The agent used to require `CRIU_ENABLED=true` and refuse
+  the operation otherwise — even if the host actually had a CRIU
+  installed via some other mechanism. Now `initCriu.enabled=false` means
+  "skip init-criu's image pull and install"; the agent reports the
+  state as unverified but allows checkpoint attempts. If the host has
+  a CRIU, kubelet → runc → criu finds it via PATH and the checkpoint
+  succeeds; if not, the runtime error surfaces cleanly. Lets users opt
+  out of the init-criu apparatus (e.g., to avoid pulling an extra image)
+  without losing the checkpoint feature.
+
+- **init-criu's `install.sh` is probe-first.** It verifies the bundled
+  binary works before writing anything to the host. If verification
+  fails, the host is left untouched (no half-broken `/usr/local/sbin/criu`
+  symlink pointing at a segfaulting binary), and the marker reports
+  `source=none` (or `source=host` if a pre-existing host CRIU is
+  detected). Replaces the previous `chroot $DEST /usr/local/sbin/criu
+  --version || echo "Version check skipped"` silent-failure pattern.
+
+### Added
+
+- **`/uninstall.sh` bundled in the init-criu image.** Removes the
+  symlink + `/opt/reel/` files this image's `install.sh` writes.
+  Idempotent. Run manually via `kubectl run` to clean a node:
+
+  ```bash
+  kubectl run reel-cleanup --rm -it --restart=Never \
+    --image=getreel/init-criu:v1.7.0 \
+    --overrides='{"spec":{"containers":[{"name":"reel-cleanup","image":"getreel/init-criu:v1.7.0","securityContext":{"privileged":true},"command":["/uninstall.sh","/host"],"volumeMounts":[{"name":"host","mountPath":"/host"}]}],"volumes":[{"name":"host","hostPath":{"path":"/"}}]}}'
+  ```
+
 ## v1.6.0
 
 Two new features and a scheduler verb cleanup.

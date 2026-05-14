@@ -2,6 +2,26 @@
 
 All notable changes to Reel are documented here.
 
+## v1.7.1
+
+Quality-of-life release. The only user-visible change is a pipe-keepalive
+shim that lets long-running `reel export sbom|sarif|cbom` survive
+downstream stdin-readiness timeouts.
+
+### Fixed
+
+- **`reel export sbom|sarif|cbom ... | claude "..."`** (and any other pipe
+  consumer with a stdin-readiness timeout) no longer fails when Trivy's
+  cold-start takes longer than the consumer's grace window. `claude`'s
+  default is 3 seconds; cold image scans can take 4–8 s before the first
+  byte. New behaviour: when stdout is a pipe AND the output format is
+  whitespace-tolerant JSON (`cyclonedx`, `spdx-json`, `sarif`, `json`,
+  default), the CLI emits a single `\n` every second until the real
+  payload starts streaming. JSON parsers tolerate leading whitespace per
+  RFC 8259, so the keepalive bytes are invisible to downstream consumers.
+  TTY output, regular files (`-o`, `> file`), and unsafe formats (`text`,
+  `table`, tag-value `spdx`) are byte-identical to v1.7.0.
+
 ## v1.7.0
 
 Major CRIU detection and installation overhaul. Fixes the segfault class

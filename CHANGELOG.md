@@ -2,6 +2,43 @@
 
 All notable changes to Reel are documented here.
 
+## v1.7.2
+
+Security patch + quality-of-life. Upgrade is recommended for anyone running
+`reel export malware --image` or `reel export cbom --image` against
+untrusted images, or running the agent with scheduled `upload malware` /
+`upload cbom` jobs.
+
+### Security
+
+- **Tar extraction now rejects symlinks with absolute or `..`-bearing
+  targets.** Before this release, a malicious container image could craft
+  a tar layer containing a symlink (e.g. `evil → /etc/passwd`) followed by
+  a regular-file entry of the same name; extraction would follow the
+  symlink and overwrite the host file. Affected paths: standalone image
+  extraction for malware and CBOM scans (`reel export malware --image`,
+  `reel export cbom --image`) and every scheduled `upload malware` /
+  `upload cbom` job in agent mode. Agent runs as root in its pod — any
+  host file writable from the pod (incl. mounted hostPath volumes) was
+  reachable. Patched at the extractor; all six call paths in the codebase
+  now share a single hardened implementation.
+
+### Fixed
+
+- **Pipe-keepalive extended to `inventory`, `malware`, `metadata`, and
+  `volatile` exports.** v1.7.1 fixed `sbom | claude "..."` etc.; the other
+  JSON-shaped exports had the same stdin-readiness timeout problem when
+  the agent or scanner took >3 s to produce its first byte. Same shim,
+  same byte-identical behavior for TTY and `-o file` paths.
+
+### Changed
+
+- **One tar extractor codebase-wide.** Internal refactor — no user-visible
+  CLI change. Three extractors were collapsed to one hardened
+  implementation. Forensic-friendly defaults: extracted files preserve
+  ownership and timestamps on a best-effort basis (silent no-op as
+  non-root, like GNU tar).
+
 ## v1.7.1
 
 Quality-of-life release. The only user-visible change is a pipe-keepalive

@@ -2,6 +2,49 @@
 
 All notable changes to Reel are documented here.
 
+## v1.8.0
+
+Architectural refactor. CLI commands are unchanged from a user point of
+view — same flags, same outputs. The change is in *where* the work
+happens: the agent's HTTP API now owns S3 uploads end-to-end, which sets
+up the upcoming MCP gateway and AI-agent integrations.
+
+### Changed
+
+- **`reel --agent upload <artifact>` commands now POST to the agent
+  server.** Same flags, same behaviour. Previously the CLI ran the scan
+  + S3 upload pipeline in-process; now it sends one request to the
+  agent and the agent does the work. The user-visible CLI surface is
+  identical.
+
+### Added
+
+- **Inventory `--hash` / `--hash-algorithms` flags now actually work.**
+  Before this release the flags parsed but were silently ignored —
+  inventories produced via `reel --agent upload inventory --hash` had
+  no per-file cryptographic hashes. The flags now propagate end-to-end
+  and the resulting CycloneDX manifest carries hashes from the
+  requested algorithms (`md5,sha1,sha256,sha512`).
+
+### Breaking — scheduler only
+
+- **`reel.io/schedule: "... | export <artifact>"` annotations now
+  error.** The scheduler's `export` verb (local-only artifact
+  production on agent-pod disk) has been removed. It was never
+  documented on the website — only the `upload` verb is — and the use
+  case was never real (pod restart evaporates local disk).
+  Existing annotations using `export` should be rewritten as `upload`
+  with an S3 destination:
+
+  ```diff
+  - reel.io/schedule: "*/5 * * * * | export sbom --scanners vuln"
+  + reel.io/schedule: "*/5 * * * * | upload sbom --scanners vuln --s3-bucket vault"
+  ```
+
+  Standalone `reel export <artifact> ...` CLI commands are unaffected —
+  the `export` verb stays on the CLI side, only the scheduler stopped
+  accepting it.
+
 ## v1.7.2
 
 Security patch + quality-of-life. Upgrade is recommended for anyone running

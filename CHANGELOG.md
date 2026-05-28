@@ -2,6 +2,32 @@
 
 All notable changes to Reel are documented here.
 
+## v1.9.0
+
+Reel can now act as an MCP (Model Context Protocol) server, exposing its container-extraction capabilities to Claude Code, Cursor, Continue, and other MCP-aware AI clients.
+
+**`reel start mcp`** launches a stdio MCP server you can wire into your AI client's config:
+
+```json
+{
+  "mcpServers": {
+    "reel": { "command": "reel", "args": ["start", "mcp"] }
+  }
+}
+```
+
+Seven tools are exposed in standalone mode: `whoami`, `health`, `list_workloads`, `list_images`, `sbom`, `cbom`, `malware`. Each artifact tool offers three destinations — `inline` for short responses the AI reads directly, `local` for writes to `~/.reel/cache/`, `s3` for evidence persistence. Discovery tools support `summary=true` to return aggregate counts cheaply before pulling full rows.
+
+VEX annotation is wired into the MCP `sbom` tool: pass `scanners: ["vuln","vex"]` to get vendor VEX statements attached to Trivy findings, same path the CLI uses against vex.getreel.dev.
+
+**CLI rename:** the long-running `reel server` command is now `reel start server`. The `start` verb is the new parent for long-running processes (currently `server` and `mcp`). No backward-compat shim — pre-customer rename.
+
+**Fixes:**
+- `malware` tool reported scan duration in nanoseconds under a field named `_ms`. Now correctly in milliseconds.
+- MCP `sbom`/`cbom` tools now reject `pod`/`namespace` args in standalone mode with a clear error instead of falling through to a confusing low-level message.
+
+Agent-mode MCP (in-process listener on `reel start server`, HTTP/SSE transport) is planned for v1.10.0.
+
 ## v1.8.0
 
 Architectural refactor. CLI commands are unchanged from a user point of

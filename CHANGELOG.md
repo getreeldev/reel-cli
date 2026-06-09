@@ -26,8 +26,6 @@ VEX annotation is wired into the MCP `sbom` tool: pass `scanners: ["vuln","vex"]
 - `malware` tool reported scan duration in nanoseconds under a field named `_ms`. Now correctly in milliseconds.
 - MCP `sbom`/`cbom` tools now reject `pod`/`namespace` args in standalone mode with a clear error instead of falling through to a confusing low-level message.
 
-Agent-mode MCP (in-process listener on `reel start server`, HTTP/SSE transport) is planned for v1.10.0.
-
 ## v1.8.0
 
 Architectural refactor. CLI commands are unchanged from a user point of

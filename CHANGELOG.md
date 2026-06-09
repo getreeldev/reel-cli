@@ -2,6 +2,20 @@
 
 All notable changes to Reel are documented here.
 
+## v1.9.1
+
+Security hardening for the in-cluster agent, two fixes, and the removal of `reel upload sarif`.
+
+**The agent's HTTP API now binds to localhost (`127.0.0.1`) by default.** The agent runs as a privileged node-root daemon and its API has no caller authentication, so exposing it across the pod network was unnecessary surface. Nothing changes for normal use — the in-pod scheduler, the MCP loopback, and `reel --agent` (which runs inside the agent pod) all talk to it over localhost. If you deliberately front the API with your own authentication, the new `--bind` flag opts back into a wider interface: `reel start server --bind 0.0.0.0`.
+
+**`reel upload sarif` has been removed.** SARIF is a code-scanning report format, not forensic evidence, so it no longer has an evidence-vault upload path. Generating SARIF is unchanged — `reel export sbom --scanners vuln,vex --format sarif` (with vendor VEX suppressions) and `reel export sarif --image …` both work as before.
+
+**Fixes:**
+- IPv6 connections in `volatile` dumps were byte-swapped (loopback `::1` showed as `::100`); they now render correctly.
+- SBOM scans no longer fail when Trivy emits a newer CycloneDX version than the bundled parser recognises — the document is passed through intact.
+
+Companion chart release: the Helm chart tightens the agent's secret permissions to read-only-by-name and ships an opt-in default-deny NetworkPolicy — see the [Helm changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md).
+
 ## v1.9.0
 
 Reel can now act as an MCP (Model Context Protocol) server, exposing its container-extraction capabilities to Claude Code, Cursor, Continue, and other MCP-aware AI clients.

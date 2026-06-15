@@ -2,6 +2,16 @@
 
 All notable changes to Reel are documented here.
 
+## v1.10.0
+
+Agent telemetry now reaches a live endpoint, a privacy-vetted metering heartbeat is added, the no-license grace period is reframed, and a checkpoint/layer/frame/memory upload bug is fixed.
+
+**Agent telemetry now reaches its endpoint.** Earlier startup telemetry pointed at a sink that no longer existed, so every event was silently dropped. Telemetry now posts to PostHog and adds a periodic metering heartbeat — both carry only counts and privacy-vetted identifiers (hashed cluster UID, node, license id/status, agent version, capability flags), never workload names or vulnerability data. Opt out with `REEL_TELEMETRY_DISABLED=true`.
+
+**Licensing: the in-binary period is a short grace, not the evaluation.** Running without a token now grants a 3-hour in-memory grace (was 30 minutes) that resets on restart. The real evaluation is a free, self-serve 30-day license you issue yourself; it persists across restarts. All features remain available during the grace period; the API returns 403 once it expires.
+
+**Fixed: checkpoint, layer, frame, and memory uploads to S3.** These artifacts stage to a local file before the S3 push, but the staging directory wasn't created — so scheduled `upload checkpoint` (and layer/frame/memory) failed with "no such file or directory" and never reached the evidence vault. SBOM/CBOM uploads, which stream directly, were unaffected.
+
 ## v1.9.1
 
 Security hardening for the in-cluster agent, two fixes, and the removal of `reel upload sarif`.

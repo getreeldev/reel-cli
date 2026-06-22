@@ -14,14 +14,15 @@ This repository distributes the **`reel` CLI binary** (Linux, macOS, Intel + App
 
 ## Install
 
-### Linux / macOS — direct download
+### Linux — direct download
 
 ```bash
-curl -sL https://github.com/getreeldev/reel-cli/releases/latest/download/reel_linux_amd64.tar.gz \
+ARCH=$(uname -m); case "$ARCH" in aarch64|arm64) ARCH=arm64 ;; *) ARCH=amd64 ;; esac
+curl -sL https://github.com/getreeldev/reel-cli/releases/latest/download/reel_linux_${ARCH}.tar.gz \
   | tar xz && sudo mv reel /usr/local/bin/
 ```
 
-Other targets: `reel_linux_arm64.tar.gz`, `reel_darwin_amd64.tar.gz`, `reel_darwin_arm64.tar.gz`.
+Each release publishes `reel_linux_amd64`, `reel_linux_arm64`, `reel_darwin_amd64`, and `reel_darwin_arm64` tarballs.
 
 ### macOS — Homebrew
 

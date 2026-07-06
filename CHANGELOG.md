@@ -2,6 +2,18 @@
 
 All notable changes to Reel are documented here.
 
+## v1.11.0
+
+reel now runs on arm64 Linux — Graviton, Ampere, and other 64-bit Arm hardware — in both standalone and agent mode.
+
+**arm64 Linux support.** Releases now ship a `reel_linux_arm64.tar.gz` tarball alongside amd64, and the install snippet auto-detects your architecture. In Kubernetes, the agent and init images are multi-arch manifests: `helm install` on amd64, arm64, or mixed-architecture clusters pulls the right image per node — checkpoint/restore included. Malware scanning works on arm64 too, via a new multi-arch ClamAV sidecar image (the official ClamAV image is amd64-only).
+
+**Image scans follow the host architecture.** `reel export sbom --image …` scans your machine's architecture by default; use `--platform` to override (for example `--platform linux/amd64` from an Arm machine).
+
+**Security refresh.** ClamAV engine 1.5.3 (July 2026 patch), containerd 2.2.5, Go 1.25.11. The agent's Trivy database download now retries transient failures instead of blocking pod startup.
+
+Chart-side changes (multi-arch ClamAV sidecar image swap) are in the [helm changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md).
+
 ## v1.10.0
 
 Agent telemetry now reaches a live endpoint, a privacy-vetted metering heartbeat is added, the no-license grace period is reframed, and a checkpoint/layer/frame/memory upload bug is fixed.

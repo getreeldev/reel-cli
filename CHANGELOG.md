@@ -2,6 +2,14 @@
 
 All notable changes to Reel are documented here.
 
+## v1.11.1
+
+Cryptographic Bill of Materials (CBOM) accuracy fixes.
+
+`reel export cbom` no longer mislabels modern cryptography. TLS 1.2 and 1.3 were being flagged as deprecated, ECDSA was flagged through a substring collision with DSA, and RSA keys weaker than 2048 bits weren't flagged at all — all now classified correctly. SSH public-key sizes are read from the key rather than assumed to be 2048 bits. CBOM output is now deterministic (re-scanning the same container yields identical algorithm ordering), and the scanner skips oversized files that only coincidentally match a crypto filename pattern.
+
+Chart image pins bump to v1.11.1; see the [helm changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md). No template changes.
+
 ## v1.11.0
 
 reel now runs on arm64 Linux — Graviton, Ampere, and other 64-bit Arm hardware — in both standalone and agent mode.

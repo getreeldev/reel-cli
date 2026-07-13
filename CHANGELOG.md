@@ -8,7 +8,7 @@ Cryptographic Bill of Materials (CBOM) accuracy fixes.
 
 `reel export cbom` no longer mislabels modern cryptography. TLS 1.2 and 1.3 were being flagged as deprecated, ECDSA was flagged through a substring collision with DSA, and RSA keys weaker than 2048 bits weren't flagged at all — all now classified correctly. SSH public-key sizes are read from the key rather than assumed to be 2048 bits. CBOM output is now deterministic (re-scanning the same container yields identical algorithm ordering), and the scanner skips oversized files that only coincidentally match a crypto filename pattern.
 
-Chart image pins bump to v1.11.1; see the [helm changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md). No template changes.
+**Malware scanning reliability.** The in-cluster ClamAV sidecar now ships with a baked-in signature database, so `reel export malware` detects threats immediately on a fresh node even when ClamAV's rate-limited signature CDN can't be reached at startup. Previously a throttled first-boot database fetch could leave the scanner running with no signatures — reporting zero detections rather than an error. See the [helm changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md) for the chart-side change.
 
 ## v1.11.0
 

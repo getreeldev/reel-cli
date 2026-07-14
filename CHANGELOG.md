@@ -2,13 +2,13 @@
 
 All notable changes to Reel are documented here.
 
-## v1.11.1
+## v1.11.2
 
 Cryptographic Bill of Materials (CBOM) accuracy fixes.
 
 `reel export cbom` no longer mislabels modern cryptography. TLS 1.2 and 1.3 were being flagged as deprecated, ECDSA was flagged through a substring collision with DSA, and RSA keys weaker than 2048 bits weren't flagged at all — all now classified correctly. SSH public-key sizes are read from the key rather than assumed to be 2048 bits. CBOM output is now deterministic (re-scanning the same container yields identical algorithm ordering), and the scanner skips oversized files that only coincidentally match a crypto filename pattern.
 
-**Malware scanning now works reliably in agent mode.** Two fixes to `reel --agent export malware`: (1) the in-cluster ClamAV sidecar now ships with a baked-in signature database, so it has signatures immediately on a fresh node even when ClamAV's rate-limited CDN can't be reached at startup; and (2) the agent now streams each file to the ClamAV daemon for scanning, instead of asking the daemon to open container paths it can't reach — which previously made daemon-mode scans report zero detections even for known malware. Together these make in-cluster malware scanning both offline-capable and correct. See the [helm changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md) for the chart-side change.
+**In-cluster malware scanning, fixed properly.** `reel --agent export malware` was reporting zero detections even for known malware. Three things were wrong and are now fixed: (1) the ClamAV sidecar ships with a **baked-in signature database**, so it has signatures immediately on a fresh node even when ClamAV's rate-limited CDN can't be reached; (2) the agent now **hands each file to the ClamAV daemon by file descriptor** (it opens the file itself, since the daemon can't reach container paths under `/proc`), instead of asking the daemon to open a path it can't see; and (3) the silent CLI fallback is **removed** — if the scanner can't run, `reel export malware` now **returns an error instead of a clean result**, so a broken scanner can never quietly report "no malware found." Standalone `reel export malware --image` is unchanged. See the [helm changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md) for the chart-side change.
 
 ## v1.11.0
 

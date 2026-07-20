@@ -2,6 +2,18 @@
 
 All notable changes to Reel are documented here.
 
+## v1.12.0
+
+Official Talos Linux support, node-OS awareness, and checkpoint moved to opt-in.
+
+**reel runs on Talos Linux.** Talos has no SSH, no shell, and a read-only root filesystem — so traditional "SSH in and run forensic tooling" is impossible by design. reel's agent, a DaemonSet, captures container state there like on any other node: SBOM, CBOM, malware, filesystem layers, and live memory dumps all work on **stock chart values**. It's continuously tested on a real Talos cluster each release. The same applies to other immutable-OS nodes such as Bottlerocket and Flatcar.
+
+**The agent now knows what OS its node runs.** `reel --agent status` shows a `Node OS:` line (Talos, Bottlerocket, Flatcar, Ubuntu, RHEL, Amazon Linux, and more, detected from the Kubernetes node), and the agent reports this in telemetry so a fleet's node-OS mix is visible at a glance.
+
+**Checkpoint/restore is now opt-in.** CRIU checkpointing installs a patched CRIU binary onto the host and relies on Kubernetes' still-beta `ContainerCheckpoint` feature, so it's now off by default — one less privileged host operation unless you use it. **To keep checkpoint, install the agent with `--set initCriu.enabled=true`** on nodes with a writable host filesystem; it is unavailable on immutable-OS nodes, where `reel status` says so plainly. Layer capture and live memory dumps don't use CRIU and are unaffected. This also means immutable-OS nodes need no special configuration — they run on the defaults.
+
+Chart-side changes (init-criu disabled by default; the separate Talos values profile retired) are in the [helm changelog](https://github.com/getreeldev/helm/blob/main/CHANGELOG.md).
+
 ## v1.11.2
 
 Cryptographic Bill of Materials (CBOM) accuracy fixes.
